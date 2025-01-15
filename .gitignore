@@ -1,0 +1,4 @@
+.env
+users_hghbot.db
+node_modules/
+__tests__

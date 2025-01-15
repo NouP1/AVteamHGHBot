@@ -1,0 +1,25 @@
+{
+  "name": "avteamhghbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "hgh_bot.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node hgh_bot.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.66.0",
+    "openai": "^4.78.1",
+    "sequelize": "^6.37.5",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "sinon": "^19.0.2",
+    "supertest": "^7.0.0"
+  }
+}
