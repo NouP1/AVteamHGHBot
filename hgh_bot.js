@@ -87,7 +87,7 @@ bot.on('message', async (msg) => {
                 content: [
                     {
                         type: "text",
-                        text: userMessage + "дели текст на абзацы, добавляй большей emoji по смыслу и пытайся сделать более структурированным, постарайся предложить варианты по решению проблемы, не используй символы (# *) в своих ответах",
+                        text: userMessage + "дели текст на абзацы, добавляй большей emoji по смыслу и пытайся сделать более структурированным, постарайся предложить варианты по решению проблемы",
                     },
                     {
                         type: "image_url",
@@ -104,10 +104,9 @@ bot.on('message', async (msg) => {
             messages,
         });
 
-        const botResponse = response.choices[0].message.content.trim();
-
+        const botResponse = response.choices[0].message.content.trim().replace(/[#*]/g, '');
         await bot.sendMessage(chatId, botResponse);
-        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота: ${botResponse}`);
+        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ${botResponse}`);
     } catch (error) {
         console.error('Ошибка:', error.message || error);
         await bot.sendMessage(chatId, '🤖 Произошла ошибка при обработке вашего запроса. Попробуйте позже.');
