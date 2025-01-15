@@ -35,7 +35,7 @@ bot.on('message', async (msg) => {
         if (userMessage === '/start') {
             const user = await User.findByPk(userId)
             if (!user) {
-                await bot.sendMessage(chatId, '🤖 Привет, это бот Helping Greenhose, можешь задавать любые вопросы на тему растений и ухаживания за ними!');
+                await bot.sendMessage(chatId, 'Привет! Просто задайте вопрос или отправьте фото — я помогу! 💚');
                 return
             }
 
