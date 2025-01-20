@@ -54,7 +54,7 @@ bot.on('message', async (msg) => {
     try {
 
         // startBot(bot,userId,subscriptionChannelId,chatId,userMessage,checkChatMember)
-        await bot.sendMessage(chatId, '🤖 Работа бота приостановлена.');
+        await bot.sendMessage(chatId, '🤖 Работа бота приостановлена. Проводятся технические работы');
 //         const user = await User.findByPk(userId)
 //         const isSubscribed = await checkChatMember(bot, subscriptionChannelId, userId, chatId);
 //         if (!isSubscribed) {
