@@ -1,6 +1,6 @@
 const User = require('./models/user.js')
 
-exports.checkAndUpdateRequestLimit = async(userId) => {
+exports.checkAndUpdateRequestLimit = async(userId, username) => {
     const user = await User.findByPk(userId);
     if (user) {
         if (user.requestsCount >= 5) {
@@ -11,7 +11,7 @@ exports.checkAndUpdateRequestLimit = async(userId) => {
         await user.save();
         return true; // Лимит не превышен
     }
-    await User.create({ userId: userId, requestsCount: 1 });
-    return true;
+   
 };
+
 
