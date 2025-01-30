@@ -4,57 +4,55 @@ const sequelize = require('./db.js');
 const User = require('./models/user.js')
 const { pay, startButtons } = require('./options.js')
 require('dotenv').config();
+const Redis = require('ioredis');
 const { checkAndUpdateRequestLimit } = require('./serviceCheckLimits.js');
 const { encodeImageToBase64 } = require('./serviceEncodeimage.js');
 const { resetLimitRequest } = require('./serviceCron.js');
 const { startBot } = require('./comandStart.js');
+const { getResponseGPT } = require('./openaiServices.js/openAI.js');
 
 const tgBotToken = process.env.TG_BOT_TOKEN;
-const openaiApiKey = process.env.OPENAI_API_KEY;
-// const logChannelId = '-1002452793233';
 const logChannelId = process.env.LOG_CHANNELID;
 const subscriptionChannelId = process.env.SUBSCRIPTION_CHANNEL_ID;
-
-const openai = new OpenAI({
-    apiKey: openaiApiKey,
-});
-
-const SYSTEM_MESSAGE = {
-    role: "system",
-    content: "GPT Role: You are a plant care expert. Response Language: Always respond in Russian. Task: Provide accurate, friendly, and motivating advice on watering, lighting, repotting, diseases, pests, and selecting plants for various conditions (light, humidity, temperature, space). If necessary, ask for more details if the initial information is insufficient. Restriction: Only answer questions about plants. Politely refuse to answer questions on other topics, explaining that you specialize exclusively in plants."
-};
-
+const redis = new Redis();
 const bot = new TelegramBot(tgBotToken, { polling: true });
-
-const checkChatMember = async (bot, subscriptionChannelId, userId, chatId) => {
-    try {
-        const chatMember = await bot.getChatMember(subscriptionChannelId, userId);
-        if (
-            chatMember.status !== 'member' &&
-            chatMember.status !== 'administrator' &&
-            chatMember.status !== 'creator'
-        ) {
-
-            return false;
-        }
-        return true;
-    } catch (error) {
-        console.error('Ошибка при проверке подписки:', error.message || error);
-        return false;
-    }
-};
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const username = msg.chat.username || 'Unknown';
     const userId = msg.from.id.toString();
     const userMessage = msg.text || msg.caption || 'Сообщение отсутствует';
-    let imageBase64 = null;
+    const mediaGroupId = msg.media_group_id;
+    // console.log("Содержимое msg:", JSON.stringify(msg, null, 2));
 
     try {
+        typingInterval = setInterval(async () => {
+            await bot.sendChatAction(chatId, 'typing');
+        }, 4000);
+        // Проверка уникальности media_group_id для данного chatId
+        // console.log(msg)
 
-        // startBot(bot,userId,subscriptionChannelId,chatId,userMessage,checkChatMember)
-        await bot.sendMessage(chatId, '🤖 Работа бота приостановлена. Проводятся технические работы');
+        // if (mediaGroupId) {
+        //     const mediaGroupKey = `mediaGroup:${chatId}:${mediaGroupId}`; // Уникальный ключ для mediaGroup
+        //     const isMediaGroupProcessed = await redis.get(mediaGroupKey);
+        //     await redis.set(mediaGroupKey, 'processed', 'EX', 3600);
+
+        //     if (isMediaGroupProcessed) {
+        //         // Если медиа-группа уже обработана, пропускаем сообщение
+        //         console.log(`Медиа-группа уже обработана: chatId=${chatId}, mediaGroupId=${mediaGroupId}, mess_id=${msg.message_id}`);
+        //         return;
+        //     }
+
+        //     console.log(`Обрабатываем сообщение из медиа-группы: chatId=${chatId}, mediaGroupId=${mediaGroupId}, mess_id=${msg.message_id}`);
+
+        //     const response = await getResponseGPT(bot, msg, chatId, username, logChannelId, userId);
+           
+
+        //     return response;
+        // }
+        
+        // startBot(bot,userId,subscriptionChannelId,chatId,userMessage,checkChatMember,username)
+        // await bot.sendMessage(chatId, '🤖 Работа бота приостановлена. Проводятся технические работы');
 //         const user = await User.findByPk(userId)
 //         const isSubscribed = await checkChatMember(bot, subscriptionChannelId, userId, chatId);
 //         if (!isSubscribed) {
@@ -76,75 +74,30 @@ bot.on('message', async (msg) => {
 //             return;
 //         }
 //         await bot.sendMessage(chatId, "🤖 Думаю над ответом...");
+console.log(msg.message_id)
+      const response  = await getResponseGPT(bot,msg,chatId,username,logChannelId, userId)
 
-        // let messageContent = `Чат: ${chatId}\nПользователь: @${username} (${userId})\nСообщение: ${userMessage}`;
-
-        // if (msg.photo) {
-        //     const photoFileId = msg.photo[msg.photo.length - 1].file_id;
-        //     await bot.sendPhoto(logChannelId, photoFileId, { caption: messageContent });
-        // }
-
-        // if (msg.video) {
-        //     const videoFileId = msg.video.file_id;
-        //     await bot.sendVideo(logChannelId, videoFileId, { caption: messageContent });
-        // }
-
-        // if (msg.voice) {
-        //     const voiceFileId = msg.voice.file_id;
-        //     await bot.sendVoice(logChannelId, voiceFileId, { caption: messageContent });
-        // }
-        // if (!msg.photo && !msg.video && !msg.voice) {
-        //     await bot.sendMessage(logChannelId, messageContent);
-        // }
-
-
-        // if (msg.photo) {
-        //     const photo = msg.photo[msg.photo.length - 1];
-        //     const fileId = photo.file_id;
-
-        //     const imageUrl = await bot.getFileLink(fileId);
-        //     imageBase64 = await encodeImageToBase64(imageUrl);
-        // }
-        // const messages = [
-        //     SYSTEM_MESSAGE,
-        //     { role: "user", content: userMessage }, // Текстовое сообщение
-        // ];
-
-        // if (imageBase64) {
-        //     messages.push({
-        //         role: "user",
-        //         content: [
-        //             {
-        //                 type: "text",
-        //                 text: userMessage + "дели текст на абзацы, добавляй большей emoji по смыслу и пытайся сделать более структурированным, постарайся предложить варианты по решению проблемы",
-        //             },
-        //             {
-        //                 type: "image_url",
-        //                 image_url: {
-        //                     url: `data:image/jpeg;base64,${imageBase64}`,
-        //                 },
-        //             },
-        //         ],
-        //     });
-        // }
-
-        // const response = await openai.chat.completions.create({
-        //     model: "gpt-4-turbo", // Убедитесь, что модель поддерживает обработку изображений
-        //     messages,
-        // });
-
-        // const botResponse = response.choices[0].message.content.trim().replace(/[#*]/g, '');
-        // await bot.sendMessage(chatId, botResponse);
+        const botResponse = response.content.trim().replace(/[#*-]/g, '');
+    if(botResponse) {
+        await bot.sendMessage(chatId, botResponse);
+    } else {
+        await bot.sendMessage(chatId, "Повтори пожалуйста)");
+    }
+        
         // await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ${botResponse}`);
         // await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ()`);
-        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nПользователь: @${username} (${userId})\nСообщение: ${userMessage}`);
+        // await bot.sendMessage(logChannelId, `Чат: ${chatId}\nПользователь: @${username} (${userId})\nСообщение: ${userMessage}`);
     } catch (error) {
         const errorMessage = error.message || error.toString() || 'Неизвестная ошибка';
         console.error('Ошибка:', errorMessage);
         await bot.sendMessage(chatId, '🤖 Произошла ошибка при обработке вашего запроса. Попробуйте позже.');
         await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ${errorMessage}`);
+    } finally {
+        // Останавливаем периодическое обновление состояния
+        clearInterval(typingInterval);
     }
 });
+
 bot.on('callback_query', async msg => {
     try {
         const data = msg.data;

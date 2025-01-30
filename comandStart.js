@@ -1,7 +1,7 @@
 const User = require('./models/user')
 const {startButtons} = require('./options.js')
 
-exports.startBot = async(bot,userId,subscriptionChannelId,chatId,userMessage,checkChatMember) => {
+exports.startBot = async(bot,userId,subscriptionChannelId,chatId,userMessage,checkChatMember,username) => {
     if (userMessage === '/start') {
         const user = await User.findByPk(userId)
         if(!user) {
