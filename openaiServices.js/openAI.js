@@ -70,7 +70,7 @@ exports.getResponseGPT = async (bot, msg, chatId, username, logChannelId) => {
      const userId = `${chatId}`; 
      try { 
     
-        const userMessage = msg.text ||  "";
+    const userMessage = msg.text || msg.caption ;
     const userСaption = msg.caption;
     let imageBase64 = null;
     const isPhotoMessage = !!msg.photo;

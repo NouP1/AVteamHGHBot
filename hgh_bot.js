@@ -68,7 +68,6 @@ console.log(msg.message_id)
     }
         
         await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ${botResponse}`);
-        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ()`);
         await bot.sendMessage(logChannelId, `Чат: ${chatId}\nПользователь: @${username} (${userId})\nСообщение: ${userMessage}`);
     } catch (error) {
         const errorMessage = error.message || error.toString() || 'Неизвестная ошибка';
