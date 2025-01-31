@@ -10,7 +10,7 @@ module.exports = {
         name: "api_server",
         script: "api.py",
         exec_mode: "fork",
-        interpreter: "python", // Укажи правильную версию Python, если нужно
+        interpreter: "python3", // Укажи правильную версию Python, если нужно
         watch: false
       }
     ]
