@@ -12,7 +12,7 @@ const { startBot } = require('./comandStart.js');
 const { getResponseGPT } = require('./openaiServices.js/openAI.js');
 
 const tgBotToken = process.env.TG_BOT_TOKEN;
-const logChannelId = process.env.LOG_CHANNEL_ID;
+const logChannelId =  process.env.LOG_CHANNEL_ID;
 const subscriptionChannelId = process.env.SUBSCRIPTION_CHANNEL_ID;
 const redis = new Redis();
 const bot = new TelegramBot(tgBotToken, { polling: true });
@@ -68,7 +68,7 @@ console.log(msg.message_id)
     }
         
         await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ${botResponse}`);
-        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nПользователь: @${username} (${userId})\nСообщение: ${userMessage}`);
+        
     } catch (error) {
         const errorMessage = error.message || error.toString() || 'Неизвестная ошибка';
         console.error('Ошибка:', errorMessage);
