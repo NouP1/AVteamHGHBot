@@ -12,10 +12,13 @@ const { startBot } = require('./comandStart.js');
 const { getResponseGPT } = require('./openaiServices.js/openAI.js');
 
 const tgBotToken = process.env.TG_BOT_TOKEN;
-const logChannelId = process.env.LOG_CHANNELID;
+const logChannelId = process.env.LOG_CHANNEL_ID;
 const subscriptionChannelId = process.env.SUBSCRIPTION_CHANNEL_ID;
 const redis = new Redis();
 const bot = new TelegramBot(tgBotToken, { polling: true });
+
+resetLimitRequest();
+
 
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
@@ -29,29 +32,8 @@ bot.on('message', async (msg) => {
         typingInterval = setInterval(async () => {
             await bot.sendChatAction(chatId, 'typing');
         }, 4000);
-        // Проверка уникальности media_group_id для данного chatId
-        // console.log(msg)
 
-        // if (mediaGroupId) {
-        //     const mediaGroupKey = `mediaGroup:${chatId}:${mediaGroupId}`; // Уникальный ключ для mediaGroup
-        //     const isMediaGroupProcessed = await redis.get(mediaGroupKey);
-        //     await redis.set(mediaGroupKey, 'processed', 'EX', 3600);
-
-        //     if (isMediaGroupProcessed) {
-        //         // Если медиа-группа уже обработана, пропускаем сообщение
-        //         console.log(`Медиа-группа уже обработана: chatId=${chatId}, mediaGroupId=${mediaGroupId}, mess_id=${msg.message_id}`);
-        //         return;
-        //     }
-
-        //     console.log(`Обрабатываем сообщение из медиа-группы: chatId=${chatId}, mediaGroupId=${mediaGroupId}, mess_id=${msg.message_id}`);
-
-        //     const response = await getResponseGPT(bot, msg, chatId, username, logChannelId, userId);
-           
-
-        //     return response;
-        // }
-        
-        // startBot(bot,userId,subscriptionChannelId,chatId,userMessage,checkChatMember,username)
+        startBot(bot,userId,subscriptionChannelId,chatId,userMessage,username)
         // await bot.sendMessage(chatId, '🤖 Работа бота приостановлена. Проводятся технические работы');
 //         const user = await User.findByPk(userId)
 //         const isSubscribed = await checkChatMember(bot, subscriptionChannelId, userId, chatId);
@@ -68,12 +50,13 @@ bot.on('message', async (msg) => {
             
 //         }
         
-//         const isAllowed = await checkAndUpdateRequestLimit(userId, username);
-//         if (!isAllowed) {
-//             await bot.sendMessage(chatId, '🤖 Ваш лимит запросов исчерпан. Оплатите подписку, чтобы продолжить использование бота.', pay);
-//             return;
-//         }
-//         await bot.sendMessage(chatId, "🤖 Думаю над ответом...");
+        const isAllowed = await checkAndUpdateRequestLimit(userId, username);
+        if (!isAllowed) {
+            // await bot.sendMessage(chatId, '🤖 Ваш лимит запросов исчерпан. Оплатите подписку, чтобы продолжить использование бота.', pay);
+            await bot.sendMessage(chatId, '🤖 Вы достигли лимита запросов (5 в сутки). Попробуйте снова завтра.')
+            return;
+        }
+        await bot.sendMessage(chatId, "🤖 Думаю над ответом...");
 console.log(msg.message_id)
       const response  = await getResponseGPT(bot,msg,chatId,username,logChannelId, userId)
 
@@ -84,9 +67,9 @@ console.log(msg.message_id)
         await bot.sendMessage(chatId, "Повтори пожалуйста)");
     }
         
-        // await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ${botResponse}`);
-        // await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ()`);
-        // await bot.sendMessage(logChannelId, `Чат: ${chatId}\nПользователь: @${username} (${userId})\nСообщение: ${userMessage}`);
+        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ${botResponse}`);
+        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nОтвет бота:\n ()`);
+        await bot.sendMessage(logChannelId, `Чат: ${chatId}\nПользователь: @${username} (${userId})\nСообщение: ${userMessage}`);
     } catch (error) {
         const errorMessage = error.message || error.toString() || 'Неизвестная ошибка';
         console.error('Ошибка:', errorMessage);
@@ -98,44 +81,44 @@ console.log(msg.message_id)
     }
 });
 
-bot.on('callback_query', async msg => {
-    try {
-        const data = msg.data;
-        const chatId = msg.message.chat.id;
-        const messageId = msg.message.message_id;
-        const userId = msg.from.id;
+// bot.on('callback_query', async msg => {
+//     try {
+//         const data = msg.data;
+//         const chatId = msg.message.chat.id;
+//         const messageId = msg.message.message_id;
+//         const userId = msg.from.id;
 
-        if (data === 'check') {
+//         if (data === 'check') {
 
-            const isSubscribed = await checkChatMember(bot, subscriptionChannelId, userId, chatId);
-            if (isSubscribed) {
-                await bot.editMessageText("Просто задайте вопрос или отправьте фото — я помогу! 💚",
-                {
-                chat_id:chatId,
-                message_id:messageId,
-                 });
-                return;
-            }
-            await bot.editMessageText(
-`❌ Вы не подписаны на [наш канал](https://t.me/${subscriptionChannelId}) `,
-                {
-                chat_id:chatId,
-                message_id:messageId,
-                parse_mode: 'Markdown', 
-                reply_markup: startButtons.reply_markup,}
-            );
-            return;
+//             const isSubscribed = await checkChatMember(bot, subscriptionChannelId, userId, chatId);
+//             if (isSubscribed) {
+//                 await bot.editMessageText("Просто задайте вопрос или отправьте фото — я помогу! 💚",
+//                 {
+//                 chat_id:chatId,
+//                 message_id:messageId,
+//                  });
+//                 return;
+//             }
+//             await bot.editMessageText(
+// `❌ Вы не подписаны на [наш канал](https://t.me/${subscriptionChannelId}) `,
+//                 {
+//                 chat_id:chatId,
+//                 message_id:messageId,
+//                 parse_mode: 'Markdown', 
+//                 reply_markup: startButtons.reply_markup,}
+//             );
+//             return;
 
-        }
+//         }
 
-    } catch (error) {
-        const errorMessage = error.message || error.toString() || 'Неизвестная ошибка';
-        console.error('Ошибка:', errorMessage);
-        await bot.sendMessage(logChannelId, `\nОтвет бота:\n ${errorMessage}`);
-    }
-});
+//     } catch (error) {
+//         const errorMessage = error.message || error.toString() || 'Неизвестная ошибка';
+//         console.error('Ошибка:', errorMessage);
+//         await bot.sendMessage(logChannelId, `\nОтвет бота:\n ${errorMessage}`);
+//     }
+// });
 
-console.log('Бот запущен и готов к работе!');
+// console.log('Бот запущен и готов к работе!');
 const startServer = async () => {
     try {
         await sequelize.authenticate();

@@ -13,14 +13,16 @@ const SYSTEM_MESSAGE = {
     role: "system",
     content: "GPT Role: You are a plant care expert. Response Language: Always respond in Russian. Task: Provide accurate, friendly, and motivating advice on watering, lighting, repotting, diseases, pests, and selecting plants for various conditions (light, humidity, temperature, space). If necessary, ask for more details if the initial information is insufficient. Restriction: Only answer questions about plants. Politely refuse to answer questions on other topics, explaining that you specialize exclusively in plants."
 };
-const DEFAULT_ASSISTANT_MESSAGE = {
-    role: "assistant",
-    content: "Привет! Я готов помочь вам с любыми вопросами по уходу за растениями. 🌱"
-};
+
 const config_mes = " дели текст на абзацы, обязательно добавляй больше emoji по смыслу и пытайся ответ сделать более структурированным, если пользователь прислал фото без текста, не реагируй на него, проси его задать вопрос";
 
-const deepSeekAI = new OpenAI({
-    baseURL: 'https://api.deepseek.com/beta',
+// const deepSeekAI = new OpenAI({
+//     baseURL: 'https://api.deepseek.com/beta',
+//     apiKey: process.env.DEEPSEEK_API_KEY,
+// });
+
+const gpt3AI = new OpenAI({
+    baseURL: 'https://api.openai.com/v1',
     apiKey: process.env.DEEPSEEK_API_KEY,
 });
 
@@ -65,7 +67,8 @@ const gpt4AI = new OpenAI({
 // }
 
 exports.getResponseGPT = async (bot, msg, chatId, username, logChannelId) => {
-    try { 
+     const userId = `${chatId}`; 
+     try { 
     
         const userMessage = msg.text ||  "";
     const userСaption = msg.caption;
@@ -74,7 +77,7 @@ exports.getResponseGPT = async (bot, msg, chatId, username, logChannelId) => {
     const messageContent = `Чат: ${chatId}\nПользователь: @${username}\nСообщение: ${userMessage}`;
     const mediaGroupId = msg.media_group_id;
 
-    const userId = `${chatId}`;
+  
     let history = await getChatHistory(userId, redis, SYSTEM_MESSAGE);
     await sendMediaToLogChannel(bot, logChannelId, msg, messageContent);
 
@@ -104,13 +107,13 @@ exports.getResponseGPT = async (bot, msg, chatId, username, logChannelId) => {
 
             // history.push({ role: "user", content: gpt4Analysis });  
             const his  = await updateChatHistory(userId, { role: "user", content: gpt4Analysis }, redis, SYSTEM_MESSAGE);
-            const preparedHistory = ensureProperHistory(his);
+            //  const preparedHistory = his;
           
 
-            const deepseekResponse = await deepSeekAI.chat.completions.create({
-                model: 'deepseek-reasoner',
-                messages: preparedHistory,
-                stop:["```"]
+            const deepseekResponse = await gpt3AI.chat.completions.create({
+                model: 'gpt-3.5-turbo',
+                messages:his,
+                // stop:["```"]
             });
 
             const assistantMessage = { role: "assistant", content: deepseekResponse.choices[0].message.content };
@@ -121,18 +124,17 @@ exports.getResponseGPT = async (bot, msg, chatId, username, logChannelId) => {
         }
     } else {
        
-
-        
         console.log("Обрабатываем текст...");      
         const his = await updateChatHistory(userId, { role: "user", content: userMessage + `${config_mes}` }, redis, SYSTEM_MESSAGE);
         console.log(his)
         // const preparedHistory = ensureProperHistory(his);
 
-        const deepseekResponse = await deepSeekAI.chat.completions.create({
-            model: 'deepseek-reasoner',
+        const deepseekResponse = await gpt3AI.chat.completions.create({
+            model: 'gpt-3.5-turbo',
             messages: his,
             // stop:["```"]
         });
+        
         const assistantMessage = { role: "assistant", content: deepseekResponse.choices[0].message.content };
         await updateChatHistory(userId, assistantMessage, redis, SYSTEM_MESSAGE);
         // console.log(history)
@@ -143,6 +145,7 @@ exports.getResponseGPT = async (bot, msg, chatId, username, logChannelId) => {
     }
 } catch (error) {
     console.error("Ошибка при обработке запроса DeepSeek:", error);
+    let history = await getChatHistory(userId, redis, SYSTEM_MESSAGE);
     if (history.length > 0) {
         await redis.del(userId);
         history = [SYSTEM_MESSAGE];  

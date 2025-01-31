@@ -1,20 +1,24 @@
 const REDIS_TTL = 60 * 60 * 24; // TTL для Redis (1 день)
 
 const { getChatHistory } = require('./getChatHistory');
-const {compressContent} = require('./compressionhistory-processing/compressinghistory')
+const {compressContent} = require('./compressionhistory-processing/compressinghistory');
+
 exports.updateChatHistory = async (userId, newMessage, redis, SYSTEM_MESSAGE, maxHistoryLength = 10) => {
-    const history = await getChatHistory(userId, redis, SYSTEM_MESSAGE);
+    try {
+
+   
+   let history = await getChatHistory(userId, redis, SYSTEM_MESSAGE);
 
     let lastMessage = history[history.length - 1];
     if (history) {
     
-            // if(lastMessage && lastMessage.role !== 'system') {
+            if(lastMessage && lastMessage.role !== 'system') {
                 
-            //      const compressed = await compressContent(lastMessage.content);
-            //      lastMessage.content = compressed;
-            //      console.log(lastMessage.content)
-            //      console.log(history)
-            // }
+                 const compressed = await compressContent(lastMessage.content);
+                 lastMessage.content = compressed;
+                 console.log(lastMessage.content)
+                 console.log(history)
+            }
             
                
                 // message.content = compressed;
@@ -42,5 +46,8 @@ exports.updateChatHistory = async (userId, newMessage, redis, SYSTEM_MESSAGE, ma
     console.log(history)
     await redis.set(userId, JSON.stringify(history), 'EX', REDIS_TTL);
     return history;
-}
+} 
+}catch(error) {
+        console.error("Ошибка")
+    }
 };
